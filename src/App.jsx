@@ -8,13 +8,23 @@ function App() {
     category: "",
     file: null,
   });
+  const [loading, setLoading] = useState(false); // <-- loader state
 
   // Fetch videos from API
   useEffect(() => {
-    fetch("https://myachademy.onrender.com/api/v1/tutorial")
-      .then((res) => res.json())
-      .then((data) => setVideos(data))
-      .catch((err) => console.error("Error fetching videos:", err));
+    const fetchVideos = async () => {
+      setLoading(true); // start loader
+      try {
+        const res = await fetch("https://myachademy.onrender.com/api/v1/tutorial");
+        const data = await res.json();
+        setVideos(data);
+      } catch (err) {
+        console.error("Error fetching videos:", err);
+      } finally {
+        setLoading(false); // stop loader
+      }
+    };
+    fetchVideos();
   }, []);
 
   // Handle form input
@@ -41,6 +51,7 @@ function App() {
     formData.append("category", form.category);
     formData.append("video", form.file);
 
+    setLoading(true); // start loader
     try {
       const res = await fetch("https://myachademy.onrender.com/api/v1/tutorial", {
         method: "POST",
@@ -56,6 +67,8 @@ function App() {
       }
     } catch (err) {
       console.error("Upload error:", err);
+    } finally {
+      setLoading(false); // stop loader
     }
   };
 
@@ -160,23 +173,28 @@ function App() {
           }}
           onMouseOver={(e) => (e.target.style.background = "#219150")}
           onMouseOut={(e) => (e.target.style.background = "#27ae60")}
+          disabled={loading} // disable button while loading
         >
-          Upload Video
+          {loading ? "Loading..." : "Upload Video"}
         </button>
       </form>
 
       {/* Video List */}
       <div style={{ marginTop: "40px" }}>
         <h2 style={{ textAlign: "center", color: "#34495e" }}>📂 Video Library</h2>
-        {videos.length === 0 ? (
+
+        {loading && videos.length === 0 ? (
+          <p style={{ textAlign: "center" }}>Loading videos...</p>
+        ) : videos.length === 0 ? (
           <p style={{ textAlign: "center" }}>No videos available</p>
         ) : (
           <div
             style={{
               display: "flex",
-              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+              flexWrap: "wrap",
               gap: "20px",
               padding: "20px",
+              justifyContent: "center",
             }}
           >
             {videos.map((video, index) => (
@@ -189,17 +207,13 @@ function App() {
                   boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
                   cursor: "pointer",
                   transition: "transform 0.2s ease",
-                  width:"30%"
+                  width: "30%",
                 }}
                 onClick={() =>
                   openVideo(`https://myachademy.onrender.com/${video.videoUrl}`)
                 }
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.transform = "scale(1.03)")
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.transform = "scale(1)")
-                }
+                onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+                onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
               >
                 <video
                   src={`https://myachademy.onrender.com/${video.videoUrl}`}
@@ -210,12 +224,8 @@ function App() {
                   }}
                   muted
                 />
-                <h3 style={{ margin: "5px 0", color: "#2c3e50" }}>
-                  {video.title}
-                </h3>
-                <p style={{ fontSize: "14px", color: "#7f8c8d" }}>
-                  {video.description}
-                </p>
+                <h3 style={{ margin: "5px 0", color: "#2c3e50" }}>{video.title}</h3>
+                <p style={{ fontSize: "14px", color: "#7f8c8d" }}>{video.description}</p>
                 <span
                   style={{
                     fontSize: "12px",
